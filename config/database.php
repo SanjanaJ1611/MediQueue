@@ -14,7 +14,7 @@ define('APP_TAGLINE', 'Hospital Appointment & Virtual Queue Management System');
 // Dynamic BASE_URL detection for XAMPP / subfolder or root hosting
 if (!defined('BASE_URL')) {
     $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
-    $subfolders = ['/patient', '/doctor', '/admin', '/ajax', '/config', '/includes'];
+    $subfolders = ['/patient', '/doctor', '/admin', '/ajax', '/config', '/includes', '/api'];
     $baseUrl = $scriptDir;
     foreach ($subfolders as $sub) {
         if (substr($baseUrl, -strlen($sub)) === $sub) {
@@ -25,12 +25,24 @@ if (!defined('BASE_URL')) {
     define('BASE_URL', rtrim($baseUrl, '/'));
 }
 
-// Database Connection Settings (Default XAMPP credentials)
+// Database Connection Settings (Supports individual env vars or DATABASE_URL)
 $db_host = getenv('DB_HOST') ?: '127.0.0.1';
 $db_port = getenv('DB_PORT') ?: '3306';
 $db_name = getenv('DB_NAME') ?: 'mediqueue';
 $db_user = getenv('DB_USER') ?: 'root';
 $db_pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
+
+// Parse DATABASE_URL if available (common in Railway, Render, Heroku)
+if ($db_url = getenv('DATABASE_URL')) {
+    $parsed = parse_url($db_url);
+    if ($parsed) {
+        $db_host = $parsed['host'] ?? $db_host;
+        $db_port = $parsed['port'] ?? $db_port;
+        $db_user = $parsed['user'] ?? $db_user;
+        $db_pass = $parsed['pass'] ?? $db_pass;
+        $db_name = ltrim($parsed['path'] ?? $db_name, '/');
+    }
+}
 
 $pdo = null;
 $db_error = null;
@@ -44,12 +56,25 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
     ];
+    if (getenv('DB_SSL') === 'true' || getenv('MYSQL_ATTR_SSL_CA')) {
+        $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+    }
     $pdo = new PDO($dsn, $db_user, $db_pass, $options);
     $db_driver = 'mysql';
 } catch (Exception $e) {
-    // 2. If MySQL is not reachable or credentials differ, seamlessly fall back to local SQLite database
+    // 2. If MySQL is not reachable or credentials differ, seamlessly fall back to SQLite database
     $sqlitePath = __DIR__ . '/../database/mediqueue.sqlite';
     if (file_exists($sqlitePath)) {
+        // If running in a read-only serverless environment (e.g. Vercel), copy to writable /tmp
+        if (getenv('VERCEL') || !is_writable($sqlitePath)) {
+            $tmpSqlite = sys_get_temp_dir() . '/mediqueue.sqlite';
+            if (!file_exists($tmpSqlite) || filesize($tmpSqlite) === 0) {
+                @copy($sqlitePath, $tmpSqlite);
+            }
+            if (file_exists($tmpSqlite)) {
+                $sqlitePath = $tmpSqlite;
+            }
+        }
         try {
             $pdo = new PDO("sqlite:" . $sqlitePath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

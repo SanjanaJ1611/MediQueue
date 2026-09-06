@@ -178,6 +178,40 @@ MediQueue/
 
 ---
 
+## 🚀 Deploying to Vercel
+
+MediQueue is pre-configured with `vercel.json` and a serverless entrypoint in `api/index.php` using the community `vercel-php@0.9.0` runtime.
+
+### Step 1: Push Code to GitHub
+Your repository is already linked:
+```bash
+git push -u origin main
+```
+
+### Step 2: Import Project in Vercel
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard) and click **"Add New..."** &rarr; **"Project"**.
+2. Select your GitHub repository: `SanjanaJ1611/MediQueue`.
+3. Keep the default settings (Framework Preset: **Other**, Root Directory: `./`).
+4. Click **Deploy**.
+
+### Step 3: Configure Database (For Production Persistence)
+Because Vercel serverless functions have an ephemeral filesystem, we recommend connecting a free cloud MySQL database (e.g. from **[TiDB Cloud](https://tidbcloud.com)**, **[Aiven](https://aiven.io)**, or **[Railway](https://railway.app)**):
+
+1. Create a free MySQL database on your chosen provider.
+2. Import the database schema from `database/mediqueue.sql`.
+3. In your Vercel Project Dashboard, navigate to **Settings** &rarr; **Environment Variables** and add:
+   - `DB_HOST`: Your cloud database hostname
+   - `DB_PORT`: `3306` (or provider port)
+   - `DB_NAME`: Your database name
+   - `DB_USER`: Your database username
+   - `DB_PASS`: Your database password
+   - `DB_SSL`: `true` (if SSL connection is required by provider)
+4. Redeploy project — MediQueue will automatically connect directly to your cloud MySQL!
+
+*(Note: If no database environment variables are set, MediQueue automatically boots with the built-in SQLite database in `/tmp` for instant testing).*
+
+---
+
 ## 🔮 Future Enhancements
 
 1. **SMS / WhatsApp Gateway Integration:** Twilio / WhatsApp Business API integration to dispatch queue SMS alerts directly to patients' mobile phones.
@@ -188,3 +222,4 @@ MediQueue/
 ---
 
 &copy; MediQueue – Professional Hospital Appointment & Virtual Queue Management System.
+
