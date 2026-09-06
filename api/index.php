@@ -3,6 +3,9 @@
  * Vercel Serverless Entrypoint / Router for MediQueue
  */
 
+// Suppress deprecation warnings on PHP 8.4/8.5+ to keep HTML output clean
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
 // Set working directory to project root
 chdir(dirname(__DIR__));
 

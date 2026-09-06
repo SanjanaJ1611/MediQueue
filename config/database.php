@@ -3,6 +3,9 @@
  * MediQueue - Database Configuration & Dual-Engine Driver (MySQL with Seamless SQLite Fallback)
  */
 
+// Suppress deprecation warnings on PHP 8.4/8.5+ to keep HTML output clean
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -76,29 +79,41 @@ try {
             }
         }
         try {
-            $pdo = new PDO("sqlite:" . $sqlitePath);
+            if (class_exists('Pdo\Sqlite')) {
+                $pdo = new Pdo\Sqlite("sqlite:" . $sqlitePath);
+            } else {
+                $pdo = new PDO("sqlite:" . $sqlitePath);
+            }
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             $db_driver = 'sqlite';
 
+            // Safe function registrar supporting both PHP 8.5+ Pdo\Sqlite::createFunction and legacy PDO::sqliteCreateFunction
+            $registerFunc = function($name, $callback) use ($pdo) {
+                if (method_exists($pdo, 'createFunction')) {
+                    $pdo->createFunction($name, $callback);
+                } elseif (method_exists($pdo, 'sqliteCreateFunction')) {
+                    @$pdo->sqliteCreateFunction($name, $callback);
+                }
+            };
+
             // Register MySQL-compatible SQL functions for seamless compatibility
-            $pdo->sqliteCreateFunction('CURDATE', function() {
+            $registerFunc('CURDATE', function() {
                 return date('Y-m-d');
             });
-            $pdo->sqliteCreateFunction('NOW', function() {
+            $registerFunc('NOW', function() {
                 return date('Y-m-d H:i:s');
             });
-            $pdo->sqliteCreateFunction('CURTIME', function() {
+            $registerFunc('CURTIME', function() {
                 return date('H:i:s');
             });
-            $pdo->sqliteCreateFunction('DATE_ADD', function($date, $expr) {
-                // Approximate standard INTERVAL matches
+            $registerFunc('DATE_ADD', function($date, $expr) {
                 return date('Y-m-d', strtotime('+1 day', strtotime($date)));
             });
-            $pdo->sqliteCreateFunction('DATE_SUB', function($date, $expr) {
+            $registerFunc('DATE_SUB', function($date, $expr) {
                 return date('Y-m-d', strtotime('-1 day', strtotime($date)));
             });
-            $pdo->sqliteCreateFunction('TIMESTAMPDIFF', function($unit, $t1, $t2) {
+            $registerFunc('TIMESTAMPDIFF', function($unit, $t1, $t2) {
                 if (!$t1 || !$t2) return 15;
                 $diff = abs(strtotime($t2) - strtotime($t1));
                 return round($diff / 60);
