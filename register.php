@@ -164,6 +164,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div><?= htmlspecialchars($error) ?></div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
+                    <?php endif; ?>
+
                     <!-- Google Supabase OAuth Button -->
                     <div class="mb-4">
                         <button type="button" id="btnGoogleRegister" class="btn btn-outline-dark w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-medium shadow-sm bg-white" style="border-color: #dadce0; color: #3c4043;">
