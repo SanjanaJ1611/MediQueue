@@ -41,15 +41,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = $_POST['password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
 
+        $phoneDigits = preg_replace('/\D/', '', $form['phone']);
+        if (strlen($phoneDigits) === 12 && substr($phoneDigits, 0, 2) === '91') {
+            $phoneDigits = substr($phoneDigits, 2);
+        }
+
+        $emergencyDigits = preg_replace('/\D/', '', $form['emergency_contact']);
+        if (strlen($emergencyDigits) === 12 && substr($emergencyDigits, 0, 2) === '91') {
+            $emergencyDigits = substr($emergencyDigits, 2);
+        }
+
         if (empty($form['name']) || empty($form['email']) || empty($password)) {
             $error = 'Please fill in all mandatory fields.';
         } elseif (!filter_var($form['email'], FILTER_VALIDATE_EMAIL)) {
             $error = 'Please enter a valid email address.';
+        } elseif (empty($phoneDigits) || !preg_match('/^[6-9]\d{9}$/', $phoneDigits)) {
+            $error = 'Please enter a valid 10-digit Indian mobile number (e.g. 9876543210 starting with 6, 7, 8, or 9).';
+        } elseif (!empty($emergencyDigits) && !preg_match('/^[6-9]\d{9}$/', $emergencyDigits)) {
+            $error = 'Emergency contact must be a valid 10-digit Indian mobile number (e.g. 9876543210).';
         } elseif (strlen($password) < 6) {
             $error = 'Password must be at least 6 characters long.';
         } elseif ($password !== $confirmPassword) {
             $error = 'Passwords do not match. Please verify.';
         } else {
+            $form['phone'] = '+91 ' . $phoneDigits;
+            $form['emergency_contact'] = !empty($emergencyDigits) ? '+91 ' . $emergencyDigits : '';
+
             // Check if email already registered
             $checkStmt = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
             $checkStmt->execute([$form['email']]);
@@ -200,7 +217,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="col-md-6">
                                 <label for="regPhone" class="form-label small fw-semibold text-muted">Mobile Phone *</label>
-                                <input type="tel" class="form-control" id="regPhone" name="phone" value="<?= htmlspecialchars($form['phone']) ?>" placeholder="+1 (555) 000-0000" required>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted fw-semibold border-end-0">🇮🇳 +91</span>
+                                    <input type="tel" class="form-control border-start-0 ps-1" id="regPhone" name="phone" value="<?= htmlspecialchars(substr(preg_replace('/\D/', '', $form['phone']), -10)) ?>" placeholder="9876543210" maxlength="10" inputmode="numeric" pattern="[6-9][0-9]{9}" title="Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10);" required>
+                                </div>
+                                <div class="form-text small text-muted" style="font-size: 0.75rem;">10-digit Indian mobile number (e.g. 9876543210)</div>
                             </div>
 
                             <div class="col-md-4">
@@ -228,12 +249,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="col-md-12">
                                 <label for="regAddress" class="form-label small fw-semibold text-muted">Residential Address</label>
-                                <textarea class="form-control" id="regAddress" name="address" rows="2" placeholder="Street, City, State, ZIP code"><?= htmlspecialchars($form['address']) ?></textarea>
+                                <textarea class="form-control" id="regAddress" name="address" rows="2" placeholder="Street, City, State, PIN code"><?= htmlspecialchars($form['address']) ?></textarea>
                             </div>
 
                             <div class="col-md-12">
                                 <label for="regEmergency" class="form-label small fw-semibold text-muted">Emergency Contact Number</label>
-                                <input type="tel" class="form-control" id="regEmergency" name="emergency_contact" value="<?= htmlspecialchars($form['emergency_contact']) ?>" placeholder="Family member or guardian phone">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted fw-semibold border-end-0">🇮🇳 +91</span>
+                                    <input type="tel" class="form-control border-start-0 ps-1" id="regEmergency" name="emergency_contact" value="<?= htmlspecialchars(substr(preg_replace('/\D/', '', $form['emergency_contact']), -10)) ?>" placeholder="9876543210" maxlength="10" inputmode="numeric" pattern="[6-9][0-9]{9}" title="Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10);">
+                                </div>
+                                <div class="form-text small text-muted" style="font-size: 0.75rem;">Optional: 10-digit Indian mobile number of family member or guardian</div>
                             </div>
 
                             <div class="col-md-6">
@@ -323,6 +348,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const BASE_URL = "<?= htmlspecialchars(BASE_URL) ?>";
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Strict digit-only enforcement for Indian mobile numbers
+            ['regPhone', 'regEmergency'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                
+                el.addEventListener('input', function() {
+                    this.value = this.value.replace(/\D/g, '').slice(0, 10);
+                });
+
+                el.addEventListener('keydown', function(e) {
+                    // Allow navigation, control, backspace, delete, tab
+                    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                    if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) return;
+                    // Block anything that is not a numeric digit
+                    if (!/^[0-9]$/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+
+                el.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pasted = (e.clipboardData || window.clipboardData).getData('text');
+                    const digits = pasted.replace(/\D/g, '').slice(0, 10);
+                    this.value = digits;
+                });
+            });
+
             const redirectUrlEl = document.getElementById('supabaseRedirectUrl');
             if (redirectUrlEl) {
                 redirectUrlEl.textContent = window.location.origin + BASE_URL + '/auth/callback.php';
