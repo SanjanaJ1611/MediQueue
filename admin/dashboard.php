@@ -24,13 +24,24 @@ $completedApps = (int)$conn->query("SELECT COUNT(*) FROM appointments WHERE stat
 $cancelledApps = (int)$conn->query("SELECT COUNT(*) FROM appointments WHERE status = 'cancelled'")->fetchColumn();
 
 // Average waiting time for completed queues today
-$avgWait = (int)$conn->query("
-    SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, joined_at, called_at)), 15)
-    FROM queues 
-    WHERE status IN ('completed', 'called', 'in_consultation') 
-      AND called_at IS NOT NULL 
-      AND DATE(joined_at) = CURDATE()
-")->fetchColumn();
+global $db_driver;
+if (($db_driver ?? 'mysql') === 'sqlite') {
+    $avgWait = (int)$conn->query("
+        SELECT COALESCE(AVG(ROUND((strftime('%s', called_at) - strftime('%s', joined_at)) / 60)), 15)
+        FROM queues 
+        WHERE status IN ('completed', 'called', 'in_consultation') 
+          AND called_at IS NOT NULL 
+          AND DATE(joined_at) = CURDATE()
+    ")->fetchColumn();
+} else {
+    $avgWait = (int)$conn->query("
+        SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, joined_at, called_at)), 15)
+        FROM queues 
+        WHERE status IN ('completed', 'called', 'in_consultation') 
+          AND called_at IS NOT NULL 
+          AND DATE(joined_at) = CURDATE()
+    ")->fetchColumn();
+}
 if ($avgWait <= 0) $avgWait = 15; // default reasonable average
 
 // 2. Chart Data: Appointment Status Distribution
