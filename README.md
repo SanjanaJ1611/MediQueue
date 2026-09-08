@@ -57,6 +57,26 @@ The database script is pre-seeded with verified test accounts across all three u
 
 ---
 
+## ⚡ Google Authentication with Supabase
+
+MediQueue supports native Google OAuth login powered by **Supabase Auth**:
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. Under **Authentication &rarr; Providers &rarr; Google**, enable the Google provider and enter your Google OAuth credentials.
+3. In **Authentication &rarr; URL Configuration &rarr; Redirect URLs**, add your callback URL:
+   ```
+   http://localhost:8000/auth/callback.php
+   ```
+   *(or `http://localhost/MediQueue/auth/callback.php` if using Apache/XAMPP)*
+4. Copy `.env.example` to `.env` (or update `.env`):
+   ```env
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your-anon-key
+   ```
+5. Patients can now click **Continue with Google** to sign in or register with 1 click! New users are automatically provisioned in MediQueue's local database.
+
+---
+
 ## 🚀 Quick Setup & Installation on XAMPP
 
 ### Step 1: Install XAMPP

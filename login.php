@@ -3,6 +3,7 @@
  * MediQueue - Authentication & Login Portal
  */
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/config/supabase.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 
@@ -135,7 +136,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?= htmlspecialchars($flash['message']) ?>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-                    <?php endif; ?>
+                    <!-- Google Supabase OAuth Button -->
+                    <div class="mb-4">
+                        <button type="button" id="btnGoogleLogin" class="btn btn-outline-dark w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-medium shadow-sm bg-white" style="border-color: #dadce0; color: #3c4043;">
+                            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z" fill="#4285F4"/>
+                                <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
+                                <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+                                <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                            </svg>
+                            <span>Continue with Google</span>
+                        </button>
+
+                        <div class="position-relative text-center my-3">
+                            <hr class="text-muted opacity-25 m-0">
+                            <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small" style="font-size: 0.78rem;">or sign in with email</span>
+                        </div>
+                    </div>
 
                     <form action="<?= BASE_URL ?>/login.php" method="POST">
                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
@@ -213,8 +230,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
+    <!-- Supabase Configuration Guide Modal -->
+    <div class="modal fade" id="supabaseSetupModal" tabindex="-1" aria-labelledby="supabaseSetupModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fs-6 fw-bold" id="supabaseSetupModalLabel">
+                        <i class="fa-solid fa-bolt me-2"></i> Enable Supabase Google Auth
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-dark small mb-3">
+                        To enable <strong>Google Sign-In</strong> with Supabase, add your Supabase project credentials to <code>.env</code> (or in <code>config/supabase.php</code>):
+                    </p>
+                    <div class="bg-dark text-light p-3 rounded-3 small mb-3 font-monospace" style="font-size: 0.82rem;">
+                        SUPABASE_URL=https://your-project.supabase.co<br>
+                        SUPABASE_ANON_KEY=your-anon-key
+                    </div>
+                    <ol class="small text-muted ps-3 mb-0">
+                        <li class="mb-1">Create a free project at <a href="https://supabase.com" target="_blank" class="fw-semibold">supabase.com</a>.</li>
+                        <li class="mb-1">In your Supabase project, navigate to <strong>Authentication &rarr; Providers &rarr; Google</strong> and toggle it ON.</li>
+                        <li class="mb-1">Under <strong>Authentication &rarr; URL Configuration &rarr; Redirect URLs</strong>, add:
+                            <div class="badge bg-light text-dark text-wrap text-start mt-1 d-block font-monospace p-2 border">
+                                <span id="supabaseRedirectUrl"></span>
+                            </div>
+                        </li>
+                        <li>Paste your <code>Project URL</code> and <code>anon / public key</code> from Project Settings &rarr; API into your <code>.env</code> file.</li>
+                    </ol>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= BASE_URL ?>/assets/js/script.js"></script>
+    
+    <!-- Supabase JS Client & OAuth Handler -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_CONFIGURED = <?= is_supabase_configured() ? 'true' : 'false' ?>;
+        const SUPABASE_URL = "<?= htmlspecialchars(SUPABASE_URL) ?>";
+        const SUPABASE_ANON_KEY = "<?= htmlspecialchars(SUPABASE_ANON_KEY) ?>";
+        const BASE_URL = "<?= htmlspecialchars(BASE_URL) ?>";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const redirectUrlEl = document.getElementById('supabaseRedirectUrl');
+            if (redirectUrlEl) {
+                redirectUrlEl.textContent = window.location.origin + BASE_URL + '/auth/callback.php';
+            }
+
+            const btnGoogle = document.getElementById('btnGoogleLogin');
+            if (btnGoogle) {
+                btnGoogle.addEventListener('click', async () => {
+                    if (!SUPABASE_CONFIGURED) {
+                        const modal = new bootstrap.Modal(document.getElementById('supabaseSetupModal'));
+                        modal.show();
+                        return;
+                    }
+
+                    btnGoogle.disabled = true;
+                    btnGoogle.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Connecting Google...';
+
+                    try {
+                        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                        const redirectTarget = window.location.origin + BASE_URL + '/auth/callback.php';
+                        const { data, error } = await supabase.auth.signInWithOAuth({
+                            provider: 'google',
+                            options: {
+                                redirectTo: redirectTarget
+                            }
+                        });
+                        if (error) {
+                            alert('Error initiating Google Login: ' + error.message);
+                            btnGoogle.disabled = false;
+                            btnGoogle.innerHTML = '<i class="fa-brands fa-google me-2"></i>Continue with Google';
+                        }
+                    } catch (err) {
+                        alert('Connection error: ' + err.message);
+                        btnGoogle.disabled = false;
+                        btnGoogle.innerHTML = '<i class="fa-brands fa-google me-2"></i>Continue with Google';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
