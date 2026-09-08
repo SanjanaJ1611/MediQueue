@@ -17,7 +17,7 @@ define('APP_TAGLINE', 'Hospital Appointment & Virtual Queue Management System');
 // Dynamic BASE_URL detection for XAMPP / subfolder or root hosting
 if (!defined('BASE_URL')) {
     $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
-    $subfolders = ['/patient', '/doctor', '/admin', '/ajax', '/config', '/includes', '/api'];
+    $subfolders = ['/patient', '/doctor', '/admin', '/ajax', '/config', '/includes', '/api', '/auth'];
     $baseUrl = $scriptDir;
     foreach ($subfolders as $sub) {
         if (substr($baseUrl, -strlen($sub)) === $sub) {

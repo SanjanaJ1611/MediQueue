@@ -30,8 +30,8 @@ load_mediqueue_env();
 
 // Supabase Project Credentials
 // Replace with your project settings from: https://supabase.com/dashboard/project/_/settings/api
-$supabaseUrl = getenv('SUPABASE_URL') ?: '';
-$supabaseAnonKey = getenv('SUPABASE_ANON_KEY') ?: '';
+$supabaseUrl = getenv('SUPABASE_URL') ?: 'https://woxwdvlndevhqqajkzaw.supabase.co';
+$supabaseAnonKey = getenv('SUPABASE_ANON_KEY') ?: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndveHdkdmxuZGV2aHFxYWpremF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MDgyMzEsImV4cCI6MjEwNDM4NDIzMX0.mwTkYk3MCrIZXIc1cxf-Kt_6CpcKj4fT74_CS3iKfiE';
 
 define('SUPABASE_URL', rtrim($supabaseUrl, '/'));
 define('SUPABASE_ANON_KEY', $supabaseAnonKey);

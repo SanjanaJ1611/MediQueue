@@ -54,6 +54,15 @@ require_once __DIR__ . '/../includes/auth.php';
         }
 
         async function processOAuthCallback() {
+            // Check for OAuth error directly in query or hash fragment
+            const urlParams = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const oauthError = urlParams.get('error_description') || hashParams.get('error_description') || urlParams.get('error') || hashParams.get('error');
+            if (oauthError) {
+                showError(oauthError.replace(/\+/g, ' '));
+                return;
+            }
+
             if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
                 showError("Supabase credentials are missing on this server.");
                 return;
