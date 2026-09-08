@@ -1,15 +1,26 @@
 # MediQueue – Hospital Appointment & Virtual Queue Management System
 
-**MediQueue** is a modern, real-world hospital management web application engineered to solve waiting room congestion, optimize outpatient workflows, and streamline doctor consultation schedules. It empowers patients to browse specialist doctors, book real-time appointments without double-booking collisions, join virtual queues from their devices, and track their live queue positions and estimated wait times with automated chime notifications when called.
+[![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white)](https://php.net)
+[![Supabase Auth](https://img.shields.io/badge/Supabase-Google%20Auth-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.3-7952B3?logo=bootstrap&logoColor=white)](https://getbootstrap.com)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0%2B-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com)
+[![Vercel Deployed](https://img.shields.io/badge/Vercel-Live%20Demo-black?logo=vercel&logoColor=white)](https://medi-queue-eta-orcin.vercel.app)
+
+**MediQueue** is a modern, full-featured hospital management and outpatient workflow system engineered to solve waiting room congestion, optimize clinic queues, and streamline doctor consultation schedules. 
+
+It empowers patients to find specialist physicians, book real-time appointments without double-booking collisions, join virtual queues from their devices, and track their turn live with automated audio-visual chime notifications when called.
+
+🌐 **Live Demo:** [https://medi-queue-eta-orcin.vercel.app](https://medi-queue-eta-orcin.vercel.app)
 
 ---
 
 ## 🌟 Key Features
 
 ### 👤 Patient Portal
-- **Secure Registration & Login:** Clean registration with validation, password hashing (`password_hash` BCRYPT), and session guards.
-- **Find Doctors & Specialties:** Search and filter physicians across departments (Cardiology, Dermatology, Orthopedics, Pediatrics, General Medicine, Neurology) with real-time availability badges (*Available*, *Busy*, *Unavailable*).
-- **Appointment Booking Engine:** Interactive 30-minute time-slot picker with double-booking collision prevention and automated virtual queue ticketing.
+- **Fast 1-Click Google Sign-In / Sign-Up:** Instant authentication powered by Supabase Auth alongside traditional email/password credentials.
+- **Indian Phone Validation:** Dedicated `🇮🇳 +91` format with strict digit-only enforcement preventing alphabetic characters.
+- **Find Doctors & Specialties:** Search and filter physicians across departments (Cardiology, Dermatology, Orthopedics, Pediatrics, General Medicine, Neurology) with live availability status (*Available*, *Busy*, *Unavailable*).
+- **Appointment Booking Engine:** Interactive 30-minute time-slot picker with double-booking prevention and automated virtual queue ticketing.
 - **Flagship Virtual Queue Tracker:** Live screen with auto-syncing countdown (`#1`, `3 Patients Ahead`, `~30 Mins Wait`). Synthesized audio chime and visual modal alert when the physician calls the patient's ticket.
 - **Appointment Lifecycle Management:** View upcoming, in-queue, and completed appointments with 1-click cancellation and details inspection.
 - **Companion & Visitor Passes:** Pre-register visitors and family members accompanying the patient with check-in/out logs and printable visitor badges.
@@ -20,7 +31,7 @@
 - **Clinical Dashboard:** Real-time KPI summaries for today's appointment load, waiting patients, current consultation, and completed visits.
 - **1-Click "Call Next Patient":** Instantly advances the virtual queue, marks the patient as `CALLED`, triggers audio-visual chime alerts to the patient's screen, and updates waiting positions for everyone behind.
 - **Consultation State Transitions:** Seamless single-click actions for `Start Consultation`, `Complete`, and `No Show`.
-- **Availability & Clinic Hours:** Configure working shift hours (start/end times), consultation slot durations (15–60 mins), and toggle real-time status between *Available* (Green), *Busy* (Yellow), and *Unavailable* (Red).
+- **Availability & Clinic Hours:** Configure working shift hours, consultation slot durations (15–60 mins), and toggle status between *Available* (Green), *Busy* (Yellow), and *Unavailable* (Red).
 - **Patient Clinical Records:** Search assigned patients, review chief complaints, medical history, and contact details.
 
 ### 🏥 Hospital Administration & Staff Portal
@@ -36,16 +47,21 @@
 ## 💻 Technology Stack
 
 - **Frontend:** HTML5, CSS3, JavaScript (ES6+ Vanilla), Bootstrap 5.3.3, Font Awesome 6.5.1, Chart.js.
-- **Backend:** Native PHP 8+ (No heavy frameworks required; works seamlessly out of the box).
-- **Database:** MySQL 5.7+ / 8.0+ / MariaDB with PDO prepared statements and foreign key constraints.
-- **Architecture:** Role-Based Access Control (RBAC), RESTful AJAX endpoints, and Web Audio API synthesized alert chimes.
-- **Server:** Apache / XAMPP / WampServer / LAMP.
+- **Backend:** Native PHP 8+ (No heavy frameworks required; runs smoothly on serverless and traditional servers).
+- **Authentication:** Dual-mode authentication:
+  - Native PHP sessions with bcrypt password hashing (`password_hash`).
+  - Google OAuth powered by **Supabase Auth** with secure server-side token validation.
+- **Database:** Dual-Engine architecture:
+  - **MySQL 5.7+ / 8.0+ / MariaDB** for production with PDO prepared statements and foreign key constraints.
+  - **SQLite 3 fallback** (`database/mediqueue.sqlite`) for instant zero-configuration local runs and serverless test environments.
+- **Audio:** Web Audio API synthesized alert chimes when patients are called.
+- **Deployment:** Vercel serverless (`vercel-php@0.9.0`), Apache / XAMPP / MAMP / LAMP.
 
 ---
 
 ## 🔑 Demo Login Credentials
 
-The database script is pre-seeded with verified test accounts across all three user roles:
+The database is pre-seeded with verified test accounts across all three user roles:
 
 | Role | Email Address | Password | Description |
 | :--- | :--- | :--- | :--- |
@@ -61,48 +77,65 @@ The database script is pre-seeded with verified test accounts across all three u
 
 MediQueue supports native Google OAuth login powered by **Supabase Auth**:
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. Under **Authentication &rarr; Providers &rarr; Google**, enable the Google provider and enter your Google OAuth credentials.
-3. In **Authentication &rarr; URL Configuration &rarr; Redirect URLs**, add your callback URL:
-   ```
-   http://localhost:8000/auth/callback.php
-   ```
-   *(or `http://localhost/MediQueue/auth/callback.php` if using Apache/XAMPP)*
-4. Copy `.env.example` to `.env` (or update `.env`):
-   ```env
-   SUPABASE_URL=https://your-project.supabase.co
-   SUPABASE_ANON_KEY=your-anon-key
-   ```
-5. Patients can now click **Continue with Google** to sign in or register with 1 click! New users are automatically provisioned in MediQueue's local database.
+### Step 1: Configure Supabase
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Under **Authentication &rarr; Providers &rarr; Google**, enable Google and input your Google Cloud OAuth Client ID & Secret.
+3. In **Authentication &rarr; URL Configuration &rarr; Redirect URLs**, add your callback URLs:
+   - For local development:
+     ```
+     http://localhost:8000/auth/callback.php
+     ```
+     *(or `http://localhost/MediQueue/auth/callback.php` if using XAMPP)*
+   - For Vercel production:
+     ```
+     https://medi-queue-eta-orcin.vercel.app/auth/callback.php
+     ```
+
+### Step 2: Set Environment Variables
+Copy `.env.example` to `.env` (or update `.env`):
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+```
+
+Patients and staff can now click **Continue with Google** to sign in or register with 1 click! New accounts are automatically provisioned in MediQueue's local database.
 
 ---
 
-## 🚀 Quick Setup & Installation on XAMPP
+## 🚀 Running Locally
 
-### Step 1: Install XAMPP
-Ensure you have **XAMPP** installed with **Apache** and **MySQL** services running.
+### Option 1: PHP Built-in Server (Fastest)
 
-### Step 2: Place Code in `htdocs`
-Copy the entire `MediQueue` project folder into your XAMPP `htdocs` directory:
-```
-C:\xampp\htdocs\MediQueue
-```
-
-### Step 3: Import Database in phpMyAdmin
-1. Open your browser and navigate to: `http://localhost/phpmyadmin`
-2. Click **New** in the left sidebar to create a database, or click on the **Import** tab directly.
-3. Choose the file located at:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/SanjanaJ1611/MediQueue.git
+   cd MediQueue
    ```
-   C:\xampp\htdocs\MediQueue\database\mediqueue.sql
+2. Start the built-in development server:
+   ```bash
+   php -S localhost:8000
    ```
-4. Click **Import** (or **Go**). The script will automatically create the database `mediqueue`, all 9 tables, indexes, and comprehensive sample data.
+3. Open **[http://localhost:8000](http://localhost:8000)** in your browser!
 
-### Step 4: Launch MediQueue
-Open your browser and navigate to:
-```
-http://localhost/MediQueue
-```
-(or `http://localhost/mediqueue`)
+*(The built-in pre-seeded SQLite database works right out of the box without needing MySQL installation).*
+
+---
+
+### Option 2: Using XAMPP / MAMP / Apache
+
+1. Copy or symlink the project folder into your web server's `htdocs` directory:
+   ```
+   C:\xampp\htdocs\MediQueue   (Windows)
+   /Applications/XAMPP/xamppfiles/htdocs/MediQueue   (macOS)
+   ```
+2. Open phpMyAdmin (`http://localhost/phpmyadmin`) and import:
+   ```
+   database/mediqueue.sql
+   ```
+3. Open your browser and navigate to:
+   ```
+   http://localhost/MediQueue
+   ```
 
 ---
 
@@ -112,14 +145,20 @@ http://localhost/MediQueue
 MediQueue/
 │
 ├── index.php                  # Public hospital landing page with featured specialists
-├── login.php                  # Sign In with role selection and 1-click demo switcher
-├── register.php               # Patient registration with validations & password hashing
+├── login.php                  # Sign In with role selection, Google OAuth & 1-click demo switcher
+├── register.php               # Patient registration with Indian format (+91) & Google 1-click
 ├── forgot_password.php        # Password recovery UI
 ├── logout.php                 # Secure session destruction
+├── vercel.json                # Vercel serverless deployment configuration
+├── .env.example               # Environment variables template
 ├── README.md                  # Complete documentation & setup instructions
 │
+├── auth/
+│   └── callback.php           # Supabase Google OAuth callback landing page
+│
 ├── config/
-│   └── database.php           # PDO database connection & dynamic BASE_URL resolver
+│   ├── database.php           # PDO database connection, dual-engine MySQL/SQLite fallback & BASE_URL
+│   └── supabase.php           # Supabase environment variables & credential helpers
 │
 ├── includes/
 │   ├── auth.php               # Role-based access guards (require_role), sessions, CSRF
@@ -159,6 +198,7 @@ MediQueue/
 │   └── settings.php           # Hospital profile, queue parameters, and admin security
 │
 ├── ajax/
+│   ├── supabase_auth.php      # Supabase OAuth token verification & automatic user provisioning
 │   ├── get_slots.php          # Computes free time slots and prevents double bookings
 │   ├── queue_status.php       # Polling endpoint for live queue position and wait times
 │   ├── call_next.php          # Advances queue, calls next patient, dispatches notifications
@@ -173,73 +213,28 @@ MediQueue/
 │       └── script.js          # Real-time polling handler, slot loader, Web Audio chime
 │
 └── database/
-    └── mediqueue.sql          # Complete MySQL database schema and seed dataset
+    ├── mediqueue.sql          # Complete MySQL database schema and seed dataset
+    └── mediqueue.sqlite       # Pre-seeded portable SQLite database
 ```
-
----
-
-## 🧪 Verification & Functional Testing Checklist
-
-- [x] **Registration:** New patient registration inserts into `users` and `patients`, hashes password, creates welcome notification, and logs user in.
-- [x] **Authentication & Role Guards:** Unauthorized URL access to `/doctor/` or `/admin/` redirects to appropriate dashboards or login with flash alert.
-- [x] **Doctor Availability:** Changing availability status between *Available*, *Busy*, and *Unavailable* reflects instantly in patient directory and disables booking when unavailable.
-- [x] **Appointment Booking:**
-  - Selecting a doctor and date dynamically loads free 30-minute slots.
-  - Slots already booked are grayed out and cannot be selected.
-  - Prevents double booking server-side with database transaction locking.
-- [x] **Virtual Queue Flow:**
-  - Joining queue generates sequential tickets (`CAR-101`, `GEN-201`, etc.).
-  - Doctor clicks `CALL NEXT PATIENT` &rarr; patient's queue tracker updates to **CALLED** via AJAX polling without page reload and plays an audible synthesized chime.
-  - Doctor clicks `Start Consultation` &rarr; status updates to **In Consultation**.
-  - Doctor clicks `Complete` &rarr; status updates to **Completed** and advances waiting queue.
-- [x] **Visitor Management:** Add visitor passes, check-in, check-out, and print formatted hospital visitor badges.
-- [x] **Reports & Analytics:** Filter appointments by date range, doctor, or status, view doctor turnout rates, and print formatted hospital audit reports.
-- [x] **Mobile Responsiveness:** Collapsible mobile sidebar with backdrop, horizontally scrollable data tables, and fluid card grids.
 
 ---
 
 ## 🚀 Deploying to Vercel
 
-MediQueue is pre-configured with `vercel.json` and a serverless entrypoint in `api/index.php` using the community `vercel-php@0.9.0` runtime.
+MediQueue is pre-configured with `vercel.json` and a serverless entrypoint in `api/index.php` using `vercel-php@0.9.0`.
 
-### Step 1: Push Code to GitHub
-Your repository is already linked:
-```bash
-git push -u origin main
-```
-
-### Step 2: Import Project in Vercel
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard) and click **"Add New..."** &rarr; **"Project"**.
-2. Select your GitHub repository: `SanjanaJ1611/MediQueue`.
-3. Keep the default settings (Framework Preset: **Other**, Root Directory: `./`).
-4. Click **Deploy**.
-
-### Step 3: Configure Database (For Production Persistence)
-Because Vercel serverless functions have an ephemeral filesystem, we recommend connecting a free cloud MySQL database (e.g. from **[TiDB Cloud](https://tidbcloud.com)**, **[Aiven](https://aiven.io)**, or **[Railway](https://railway.app)**):
-
-1. Create a free MySQL database on your chosen provider.
-2. Import the database schema from `database/mediqueue.sql`.
-3. In your Vercel Project Dashboard, navigate to **Settings** &rarr; **Environment Variables** and add:
-   - `DB_HOST`: Your cloud database hostname
-   - `DB_PORT`: `3306` (or provider port)
-   - `DB_NAME`: Your database name
-   - `DB_USER`: Your database username
-   - `DB_PASS`: Your database password
-   - `DB_SSL`: `true` (if SSL connection is required by provider)
-4. Redeploy project — MediQueue will automatically connect directly to your cloud MySQL!
-
-*(Note: If no database environment variables are set, MediQueue automatically boots with the built-in SQLite database in `/tmp` for instant testing).*
-
----
-
-## 🔮 Future Enhancements
-
-1. **SMS / WhatsApp Gateway Integration:** Twilio / WhatsApp Business API integration to dispatch queue SMS alerts directly to patients' mobile phones.
-2. **Telehealth / Video Consultations:** WebRTC integration for remote consultations directly within the doctor console.
-3. **Multi-Hospital / Branch Support:** Organization hierarchy allowing multi-facility hospital chains to manage different locations on a single instance.
-4. **Automated Prescription & Billing Generator:** Direct generation of PDF medical prescriptions and payment gateway integration (Stripe / Razorpay).
+1. Fork or push the repository to GitHub.
+2. In your [Vercel Dashboard](https://vercel.com/dashboard), click **"Add New..."** &rarr; **"Project"** &rarr; Select `MediQueue`.
+3. Keep default settings (Framework: **Other**, Root Directory: `./`).
+4. In **Settings &rarr; Environment Variables**, add your cloud MySQL connection details (optional, for persistent production data):
+   - `DB_HOST`: Hostname (e.g., TiDB Cloud, Aiven, Railway)
+   - `DB_PORT`: `3306`
+   - `DB_NAME`: `mediqueue`
+   - `DB_USER`: Database username
+   - `DB_PASS`: Database password
+   - `DB_SSL`: `true`
+5. Deploy!
 
 ---
 
 &copy; MediQueue – Professional Hospital Appointment & Virtual Queue Management System.
-
